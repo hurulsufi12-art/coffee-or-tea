@@ -37,11 +37,13 @@ def main():
         f.flush()
         os.fsync(f.fileno())
     os.replace(tmp_path, final_path)
-    # Read back and verify: the file the grader reads must be byte-identical
-    # to the gated text. Fail loudly instead of shipping a corrupt entry.
-    with open(final_path, encoding="utf-8") as f:
-        if f.read() != TEXT:
-            raise SystemExit("entry.txt read-back mismatch after atomic write")
+    # Read back and verify at the byte level: the gate is byte-exact
+    # (exactly 1 byte, no newline, no BOM), and the grader reads bytes,
+    # so compare the raw bytes on disk — not just the decoded text.
+    # Fail loudly instead of shipping a corrupt entry.
+    with open(final_path, "rb") as f:
+        if f.read() != TEXT.encode("utf-8"):
+            raise SystemExit("entry.txt byte mismatch after atomic write")
 
 
 if __name__ == "__main__":
